@@ -137,8 +137,7 @@ Writes the session file when Emacs is killed."
 
 (defcustom ement-sessions-file
   (or (cl-loop for filename in
-               (list "~/.cache/ement.el"
-                     (expand-file-name "ement.el" (xdg-cache-home))
+               (list (expand-file-name "ement.el" (xdg-cache-home))
                      (expand-file-name "ement-sessions.eld" (xdg-cache-home)))
                when (file-exists-p filename)
                return filename)
