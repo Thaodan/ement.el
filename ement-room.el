@@ -5555,8 +5555,8 @@ Then invalidate EVENT's node to show the image."
                                          ('url mxc-url))))
                 event)
                (human-size (when size
-                             (file-size-human-readable size)))
-               (string (format "[file: %s (%s) (%s)]" filename mimetype human-size)))
+                             (format " (%s)" (file-size-human-readable size))))
+               (string (format "[file: %s (%s)%s]" filename mimetype (or human-size ""))))
     (concat (propertize string
                         'action #'call-interactively
                         'button t
@@ -5578,8 +5578,8 @@ Then invalidate EVENT's node to show the image."
                                          ('info (map mimetype size w h))
                                          ('url mxc-url))))
                 event)
-               (human-size (file-size-human-readable size))
-               (string (format "[video: %s (%s) (%sx%s) (%s)]" body mimetype w h human-size)))
+               (human-size (and size (format " (%s)" (file-size-human-readable size))))
+               (string (format "[video: %s (%s) (%sx%s)%s]" body mimetype w h (or human-size ""))))
     (concat (propertize string
                         'action #'call-interactively
                         'button t
@@ -5600,9 +5600,10 @@ Then invalidate EVENT's node to show the image."
                                          ('info (map mimetype duration size))
                                          ('url mxc-url))))
                 event)
-               (human-size (file-size-human-readable size))
+               (human-size (and size
+                                (format " (%s)" (file-size-human-readable size))))
                (human-duration (format-seconds "%m:%s" (/ duration 1000)))
-               (string (format "[audio: %s (%s) (%s) (%s)]" body mimetype human-duration human-size)))
+               (string (format "[audio: %s (%s) (%s)%s]" body mimetype human-duration (or human-size ""))))
     (concat (propertize string
                         'action #'ement-room-download-file
                         'button t
