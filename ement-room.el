@@ -5754,7 +5754,8 @@ Then invalidate EVENT's node to show the image."
                 event)
                (human-size (and size
                                 (format " (%s)" (file-size-human-readable size))))
-               (human-duration (format-seconds "%m:%s" (/ duration 1000)))
+               (human-duration (or (and duration (format-seconds "%m:%s" (/ duration 1000)))
+                                   "0:00"))
                (string (format "[audio: %s (%s) (%s)%s]" body mimetype human-duration (or human-size ""))))
     (concat (propertize string
                         'action #'ement-room-download-file
