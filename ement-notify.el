@@ -255,6 +255,7 @@ If ROOM has no existing buffer, do nothing."
                             :sound-name (when (and ement-notify-sound
                                                    (not (file-name-absolute-p ement-notify-sound)))
                                           ement-notify-sound)
+                            :desktop-entry notifications-application-name
                             ;; TODO: Show when action used.
                             ;; :actions '("default" "Show")
                             ;; :on-action #'ement-notify-show
