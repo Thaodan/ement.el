@@ -136,6 +136,18 @@ limitations and complexities of displaying strings and images in
 margins in Emacs.  But it's useful, anyway."
   :type 'boolean)
 
+(defconst ement-notify-logo-file (when load-file-name
+                                   (expand-file-name "images/logo.svg"
+                                                     (file-name-directory load-file-name)))
+  "The Ement.el logo file.")
+
+(defcustom ement-notify-icon-default 'ement-notify-logo-file
+  "Default notification icon when no room avatar is present inside the notifications."
+  :type '(choice (file :tag "Icon file")
+                 (symbol :tag "Icon name")
+                 (variable-item :tag "Ement logo" ement-notify-logo-file)
+                 (const :tag "No icon" nil)))
+
 ;;;; Commands
 
 (declare-function ement-room-goto-event "ement-room")
@@ -243,9 +255,13 @@ If ROOM has no existing buffer, do nothing."
       (truncate-string-to-width body 60)
       (notifications-notify :title title :body body
                             :app-name "Ement.el"
-                            :app-icon (when avatar
+                            :app-icon (if avatar
                                         (ement-notify--temp-file
-                                         (plist-get (cdr (get-text-property 0 'display avatar)) :data)))
+                                         (plist-get (cdr (get-text-property 0 'display avatar)) :data))
+                                        (if (and (symbolp ement-notify-icon-default)
+                                                 (boundp ement-notify-icon-default))
+                                            (symbol-value ement-notify-icon-default)
+                                          ement-notify-icon-default))
                             :category "im.received"
                             :timeout 5000
                             ;; FIXME: Using :sound-file seems to do nothing, ever.  Maybe a bug in notifications-notify?
