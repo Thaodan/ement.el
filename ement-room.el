@@ -5827,9 +5827,15 @@ compatibility), and the result is added to the CONTENT as
                             (org-export-with-section-numbers nil)
                             (org-export-with-sub-superscripts nil)
                             (org-html-inline-images nil)
-                            (display-buffer-alist (cons '("^\\*Org HTML Export\\*$"
-                                                          . (display-buffer-no-window nil))
-                                                        display-buffer-alist)))
+                            (display-buffer-alist
+                             (cons '("^\\*Org HTML Export\\*$"
+                                     . (display-buffer-no-window
+                                        nil
+                                        ;; NOTE: This sounds like a bug in Emacs
+                                        ;;       display-buffer without a window should
+                                        ;;;      not create another frame.
+                                        (pop-up-frames . nil)))
+                                   display-buffer-alist)))
                         (org-html-export-as-html nil nil nil 'body-only)))
                     (with-current-buffer "*Org HTML Export*"
                       (prog1 (string-trim (buffer-string))
