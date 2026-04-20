@@ -179,14 +179,14 @@ called with no arguments."
   "Display buffer action to use when opening room buffers.
 See function `display-buffer' and info node `(elisp) Buffer
 Display Action Functions'."
-  :type 'function)
+  :type display-buffer--action-custom-type)
 
 (defcustom ement-auto-view-room-display-buffer-action '(display-buffer-no-window)
   "Display buffer action to use when automatically opening room buffers.
 That is, rooms listed in `ement-auto-view-rooms', which see.  See
 function `display-buffer' and info node `(elisp) Buffer Display
 Action Functions'."
-  :type 'function)
+  :type display-buffer--action-custom-type)
 
 (defcustom ement-interrupted-sync-hook '(ement-interrupted-sync-warning)
   "Functions to call when syncing of a session is interrupted.
