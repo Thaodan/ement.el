@@ -4411,7 +4411,7 @@ HTML is rendered to Emacs text using `shr-insert-document'."
   "Return STRING with URLs in it made clickable."
   ;; Is there an existing Emacs function to do this?  I couldn't find one.
   ;; Yes, maybe: `goto-address-mode'.  TODO: Try goto-address-mode.
-  (with-temp-buffer
+  (with-work-buffer
     (insert string)
     (goto-char (point-min))
     (cl-loop while (re-search-forward (rx bow "http" (optional "s") "://" (1+ (not space)))
@@ -5817,7 +5817,7 @@ compatibility), and the result is added to the CONTENT as
   (pcase-let* ((body (alist-get "body" content nil nil #'equal))
                (formatted-body
                 (save-window-excursion
-                  (with-temp-buffer
+                  (with-work-buffer
                     (insert (ement--format-body-mentions body room
                               :template "[[https://matrix.to/#/%s][%s]]"))
                     (cl-letf (((symbol-function 'org-html-src-block)

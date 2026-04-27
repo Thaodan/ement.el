@@ -11,6 +11,7 @@
 ;; Version: 0.18-pre
 ;; Package-Requires: (
 ;;     (emacs "27.1")
+;;     (compat "31.1")
 ;;     (map "2.1")
 ;;     (persist "0.5")
 ;;     (plz "0.6")
@@ -880,7 +881,7 @@ Returns nil if unable to read `ement-sessions-file'."
                   session)))
     (when (file-exists-p ement-sessions-file)
       (pcase-let* ((read-circle t)
-                   (sessions (with-temp-buffer
+                   (sessions (with-work-buffer
                                (insert-file-contents ement-sessions-file)
                                (read (current-buffer)))))
         (prog1
