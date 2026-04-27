@@ -380,7 +380,7 @@ in them won't work."
                                                      :pred #'ement-session-has-synced-p)))))
   (dolist (session sessions)
     (let ((user-id (ement-user-id (ement-session-user session))))
-      (when-let ((process (map-elt ement-syncs session)))
+      (when-let* ((process (map-elt ement-syncs session)))
         ;; Disable the sync process's ELSE handler, preventing error messages, but still
         ;; allowing `plz--respond' to clean up the buffer, etc.
         (setf (process-get process :plz-else) #'ignore)
@@ -465,13 +465,13 @@ To be called from `ement-disconnect-hook'."
 
 (defun ement-view-initial-rooms (session)
   "View rooms for SESSION configured in `ement-auto-view-rooms'."
-  (when-let (rooms (alist-get (ement-user-id (ement-session-user session))
-			      ement-auto-view-rooms nil nil #'equal))
+  (when-let* ((rooms (alist-get (ement-user-id (ement-session-user session))
+			      ement-auto-view-rooms nil nil #'equal)))
     (dolist (alias/id rooms)
-      (when-let (room (cl-find-if (lambda (room)
+      (when-let* ((room (cl-find-if (lambda (room)
 				    (or (equal alias/id (ement-room-canonical-alias room))
 					(equal alias/id (ement-room-id room))))
-				  (ement-session-rooms session)))
+				  (ement-session-rooms session))))
         (let ((ement-view-room-display-buffer-action ement-auto-view-room-display-buffer-action))
           (ement-view-room room session))))))
 
@@ -691,19 +691,19 @@ To be called in `ement-sync-callback-hook'."
           ;; while calling event-insertion functions.  I don't know if this is
           ;; due to a bug in EWOC or if I just misunderstand something, but
           ;; without doing this, events may be inserted at the wrong place.
-          (when-let ((buffer-window (get-buffer-window buffer)))
+          (when-let* ((buffer-window (get-buffer-window buffer)))
             (select-window buffer-window))
           (cl-assert ement-room)
           (when (ement-room-ephemeral ement-room)
             ;; Ephemeral events.
             (ement-room--process-events (ement-room-ephemeral ement-room))
             (setf (ement-room-ephemeral ement-room) nil))
-          (when-let ((new-events (alist-get 'new-events (ement-room-local ement-room))))
+          (when-let* ((new-events (alist-get 'new-events (ement-room-local ement-room))))
             ;; HACK: Process these events in reverse order, so that later events (like reactions)
             ;; which refer to earlier events can find them.  (Not sure if still necessary.)
             (ement-room--process-events (reverse new-events))
             (setf (alist-get 'new-events (ement-room-local ement-room)) nil))
-          (when-let ((new-events (alist-get 'new-account-data-events (ement-room-local ement-room))))
+          (when-let* ((new-events (alist-get 'new-account-data-events (ement-room-local ement-room))))
             ;; Account data events.  Do this last so, e.g. read markers can refer to message events we've seen.
             (ement-room--process-events new-events)
             (setf (alist-get 'new-account-data-events (ement-room-local ement-room)) nil)))))))
@@ -964,7 +964,7 @@ Uses handlers defined in `ement-event-handlers'.  If no handler
 is defined for EVENT's type, does nothing and returns nil.  Any
 errors signaled during processing are demoted in order to prevent
 unexpected errors from arresting event processing and syncing."
-  (when-let ((handler (alist-get (ement-event-type event) ement-event-handlers nil nil #'equal)))
+  (when-let* ((handler (alist-get (ement-event-type event) ement-event-handlers nil nil #'equal)))
     ;; We demote any errors that happen while processing events, because it's possible for
     ;; events to be malformed in unexpected ways, and that could cause an error, which
     ;; would stop processing of other events and prevent further syncing.  See,
@@ -992,7 +992,7 @@ and `session' to the session.  Adds function to
     ;; If room avatars are disabled, we don't download avatars at all.  This
     ;; means that, if a user has them disabled and then reenables them, they will
     ;; likely need to reconnect to cause them to be displayed in most rooms.
-    (if-let ((url (alist-get 'url (ement-event-content event))))
+    (if-let* ((url (alist-get 'url (ement-event-content event))))
         (plz-run
          (plz-queue ement-images-queue
            'get (ement--mxc-to-url url session) :as 'binary :noquery t
@@ -1128,7 +1128,7 @@ To be called after initial sync."
       (pcase-let (((cl-struct ement-room (id parent-id) (local (map children))) room))
         (when children
           (dolist (child-id children)
-            (when-let ((child-room (cl-find child-id rooms :key #'ement-room-id :test #'equal)))
+            (when-let* ((child-room (cl-find child-id rooms :key #'ement-room-id :test #'equal)))
               (cl-pushnew parent-id (alist-get 'parents (ement-room-local child-room)) :test #'equal))))))))
 
 ;;;;; Savehist compatibility

@@ -782,7 +782,7 @@ message buffer.
 
 Customizing this option updates `ement-room-mode-self-insert-keymap'
 via the setter function `ement-room-self-insert-option-setter'.
-To do the same in lisp code, set the option with `setopt'.
+To do the same in LISP code, set the option with `setopt'.
 
 See also `ement-room-self-insert-chars'."
   :type '(repeat (function :tag "Command"))
@@ -796,7 +796,7 @@ The default key is DEL.
 
 Customizing this option updates `ement-room-mode-self-insert-keymap'
 via the setter function `ement-room-self-insert-option-setter'.
-To do the same in lisp code, set the option with `setopt'."
+To do the same in LISP code, set the option with `setopt'."
   :type 'key-sequence
   :set #'ement-room-self-insert-option-setter)
 
@@ -1207,7 +1207,7 @@ See `ement-room-with-highlighted-event-at'."
 
 (defun ement-room-compose-highlight (compose-buffer)
   "Make `ement-room-with-highlighted-event-at' persistent while COMPOSE-BUFFER exists."
-  (when-let ((overlay ement-room-replying-to-overlay))
+  (when-let* ((overlay ement-room-replying-to-overlay))
     ;; Prevent `ement-room-with-highlighted-event-at' from deleting the overlay:
     (setq ement-room-replying-to-overlay nil)
     ;; Instead, make it exist for the lifetime of the compose buffer:
@@ -1592,7 +1592,7 @@ when switching themes or adjusting `ement-prism' options."
   ;; NOTE: The notifications buffer can't be refreshed because each event is from a
   ;; different room, and the `ement-room' variable is unset in the buffer.
 
-  ;; (when-let (buffer (get-buffer "*Ement Notifications*"))
+  ;; (when-let* (buffer (get-buffer "*Ement Notifications*"))
   ;;   (with-current-buffer buffer
   ;;     (ewoc-refresh ement-ewoc)))
   )
@@ -1804,7 +1804,7 @@ otherwise use current room."
 
 (defun ement-room-dnd-upload-file (uri _action)
   "Upload the file as specified by URI to the current room."
-  (when-let ((file (dnd-get-local-file-name uri t)))
+  (when-let* ((file (dnd-get-local-file-name uri t)))
     (ement-room-send-file file (file-name-nondirectory file) ement-room ement-session
                           :msgtype (if (string-prefix-p "image/" (mailcap-file-name-to-mime-type file))
                                        "m.image"
@@ -1890,7 +1890,7 @@ buffer).  It receives two arguments, the room and the session."
                                                  then)))
                            (then-fn-symbol (gensym (format "ement-join-%s" id-or-alias)))
                            (then-fn (lambda (session)
-                                      (when-let ((room (cl-loop for room in (ement-session-rooms session)
+                                      (when-let* ((room (cl-loop for room in (ement-session-rooms session)
                                                                 when (equal room-id (ement-room-id room))
                                                                 return room)))
                                         ;; In case the join event is not in this next sync
@@ -1927,8 +1927,8 @@ buffer).  It receives two arguments, the room and the session."
 NEXT-FN is passed to `ement-room--ewoc-next-matching', which
 see."
   (interactive)
-  (if-let (node (ement-room--ewoc-next-matching ement-ewoc
-                  (ewoc-locate ement-ewoc) #'ement-event-p next-fn))
+  (if-let* ((node (ement-room--ewoc-next-matching ement-ewoc
+                    (ewoc-locate ement-ewoc) #'ement-event-p next-fn)))
       (ewoc-goto-node ement-ewoc node)
     (if (= (point) (point-max))
         ;; Already at end of buffer: signal error.
@@ -2261,7 +2261,7 @@ mentioning the ROOM and CONTENT."
         (display-warning 'ement-room-send-event-callback message)))
     (when (eq 'send ement-room-mark-rooms-read)
       ;; Move read markers.
-      (when-let ((buffer (alist-get 'buffer (ement-room-local room))))
+      (when-let* ((buffer (alist-get 'buffer (ement-room-local room))))
         (with-current-buffer buffer
           ;; NOTE: The new event may not exist in the buffer yet, so
           ;; we just have to use the last one.
@@ -2446,10 +2446,10 @@ these all require at least version 29 of Emacs):
   (pcase-let* (((cl-struct ement-event (local (map reactions))) event)
                ((cl-struct ement-session user) session)
                ((cl-struct ement-user (id user-id)) user))
-    (if-let (reaction-event (cl-find-if (lambda (event)
+    (if-let* ((reaction-event (cl-find-if (lambda (event)
                                           (and (equal user-id (ement-user-id (ement-event-sender event)))
                                                (equal key (map-nested-elt (ement-event-content event) '(m.relates_to key)))))
-                                        reactions))
+                                        reactions)))
         ;; Already sent this reaction: redact it.
         (ement-redact reaction-event room session)
       ;; Send reaction.
@@ -2549,7 +2549,7 @@ To be used in `ement-room-view-hook', which see."
 
 (defun ement-room-goto-event (event)
   "Go to EVENT in current buffer."
-  (if-let ((node (ement-room--ewoc-last-matching ement-ewoc
+  (if-let* ((node (ement-room--ewoc-last-matching ement-ewoc
                    (lambda (data)
                      (and (ement-event-p data)
                           (equal (ement-event-id event) (ement-event-id data)))))))
@@ -2628,7 +2628,7 @@ before the earliest-seen message)."
         (with-current-buffer buffer
           (save-window-excursion
             ;; NOTE: See note in `ement--update-room-buffers'.
-            (when-let ((buffer-window (get-buffer-window buffer)))
+            (when-let* ((buffer-window (get-buffer-window buffer)))
               (select-window buffer-window))
             ;; FIXME: Use retro-loading in event handlers, or in --handle-events, anyway.
             (ement-room--process-events chunk)
@@ -2904,9 +2904,9 @@ data slot."
           (when ement-room-sender-in-headers
             (ement-room--insert-sender-headers ement-ewoc))
           (ement-room-move-read-markers room
-            :read-event (when-let ((event (alist-get "m.read" (ement-room-account-data room) nil nil #'equal)))
+            :read-event (when-let* ((event (alist-get "m.read" (ement-room-account-data room) nil nil #'equal)))
                           (map-nested-elt event '(content event_id)))
-            :fully-read-event (when-let ((event (alist-get "m.fully_read" (ement-room-account-data room) nil nil #'equal)))
+            :fully-read-event (when-let* ((event (alist-get "m.fully_read" (ement-room-account-data room) nil nil #'equal)))
                                 (map-nested-elt event '(content event_id)))))
         ;; Return the buffer!
         new-buffer)))
@@ -2988,10 +2988,10 @@ arguments."
                       (lambda (data)
                         (and (ement-event-p data)
                              (or (string-match regexp (ement-user-id (ement-event-sender data)))
-                                 (when-let ((room-display-name
+                                 (when-let* ((room-display-name
                                              (gethash (ement-event-sender data) (ement-room-displaynames room))))
                                    (string-match regexp room-display-name))
-                                 (when-let ((body (alist-get 'body (ement-event-content data))))
+                                 (when-let* ((body (alist-get 'body (ement-event-content data))))
                                    (string-match regexp body))))))
                      (user-id
                       (lambda (data)
@@ -3014,7 +3014,7 @@ arguments."
                                            (let ((event-at-point (ewoc-data (ewoc-locate ement-ewoc))))
                                              (with-current-buffer (alist-get 'buffer (ement-room-local room))
                                                (ement-room-occur :pred pred :header header)
-                                               (when-let ((node (ement-room--ewoc-last-matching ement-ewoc
+                                               (when-let* ((node (ement-room--ewoc-last-matching ement-ewoc
                                                                   (lambda (data)
                                                                     (eq event-at-point data)))))
                                                  (ewoc-goto-node ement-ewoc node))))))
@@ -3097,7 +3097,7 @@ buffer."
   "Process EVENT in current buffer.
 Uses handlers defined in `ement-room-event-fns'.  The current
 buffer should be a room's buffer."
-  (when-let ((handler (alist-get (ement-event-type event) ement-room-event-fns nil nil #'equal)))
+  (when-let* ((handler (alist-get (ement-event-type event) ement-room-event-fns nil nil #'equal)))
     ;; We demote any errors that happen while processing events, because it's possible for
     ;; events to be malformed in unexpected ways, and that could cause an error, which
     ;; would stop processing of other events and prevent further syncing.  See,
@@ -3127,7 +3127,7 @@ function to `ement-room-event-fns', which see."
     (pcase rel-type
       ("m.annotation"
        ;; Look for related event in timeline.
-       (if-let ((related-event (cl-loop with fake-event = (make-ement-event :id related-id)
+       (if-let* ((related-event (cl-loop with fake-event = (make-ement-event :id related-id)
                                         for timeline-event in (ement-room-timeline ement-room)
                                         when (ement--events-equal-p fake-event timeline-event)
                                         return timeline-event)))
@@ -3136,7 +3136,7 @@ function to `ement-room-event-fns', which see."
              ;; Every time a room buffer is made, these reaction events are processed again, so we use pushnew to
              ;; avoid duplicates.  (In the future, as event-processing is refactored, this may not be necessary.)
              (cl-pushnew event (map-elt (ement-event-local related-event) 'reactions))
-             (when-let ((nodes (ement-room--ewoc-last-matching ement-ewoc
+             (when-let* ((nodes (ement-room--ewoc-last-matching ement-ewoc
                                  (lambda (data)
                                    (and (ement-event-p data)
                                         (equal related-id (ement-event-id data)))))))
@@ -3232,20 +3232,20 @@ function to `ement-room-event-fns', which see."
            ;; Redacted annotation/reaction.  NOTE: Since we link annotations in a -room
            ;; event handler (rather than in a non-room handler), we also unlink redacted
            ;; ones here.
-           (when-let (annotated-event (cl-find related-id timeline
-                                               :key #'ement-event-id :test #'equal))
+           (when-let* ((annotated-event (cl-find related-id timeline
+                                               :key #'ement-event-id :test #'equal)))
              ;; Remove it from the related event's local slot.
              (setf (map-elt (ement-event-local annotated-event) 'reactions)
                    (cl-remove redacted-id (map-elt (ement-event-local annotated-event) 'reactions)
                               :key #'ement-event-id :test #'equal))
              ;; Invalidate the related event's node.
-             (when-let (node (ement-room--ewoc-last-matching ement-ewoc
+             (when-let* ((node (ement-room--ewoc-last-matching ement-ewoc
                                (lambda (data)
                                  (and (ement-event-p data)
-                                      (equal related-id (ement-event-id data))))))
+                                      (equal related-id (ement-event-id data)))))))
                (ewoc-invalidate ement-ewoc node)))))))
     ;; Invalidate the redacted event's node.
-    (when-let ((node (ement-room--ewoc-last-matching ement-ewoc
+    (when-let* ((node (ement-room--ewoc-last-matching ement-ewoc
                        (lambda (data)
                          (and (ement-event-p data)
                               (pcase-let (((cl-struct ement-event id
@@ -3413,7 +3413,7 @@ Also, mark room's buffer as unmodified."
             (unless (alist-get event ement-room-read-receipt-request)
               ;; No existing request for this event: cancel any outstanding request and
               ;; send a new one.
-              (when-let ((request-process (car (map-values ement-room-read-receipt-request))))
+              (when-let* ((request-process (car (map-values ement-room-read-receipt-request))))
                 (when (process-live-p request-process)
                   (interrupt-process request-process)))
               (setf ement-room-read-receipt-request nil)
@@ -3424,7 +3424,7 @@ Also, mark room's buffer as unmodified."
 (defun ement-room-goto-fully-read-marker ()
   "Move to the fully-read marker in the current room."
   (interactive)
-  (if-let ((fully-read-pos (when ement-room-fully-read-marker
+  (if-let* ((fully-read-pos (when ement-room-fully-read-marker
                              (ewoc-location ement-room-fully-read-marker))))
       (with-suppressed-warnings ((obsolete point))
         ;; I like using `point' as a GV, and I object to its being obsoleted (and said so
@@ -3469,7 +3469,7 @@ Interactively, mark both types as read up to event at point."
      (let* ((node (ewoc-locate ement-ewoc))
             (event-at-point (cl-typecase (ewoc-data node)
                               (ement-event (ewoc-data node))
-                              (t (when-let ((prev-event-node (ement-room--ewoc-next-matching ement-ewoc node
+                              (t (when-let* ((prev-event-node (ement-room--ewoc-next-matching ement-ewoc node
                                                                #'ement-event-p #'ewoc-prev)))
                                    (ewoc-data prev-event-node)))))
             (last-event (ewoc-data (ement-room--ewoc-last-matching ement-ewoc #'ement-event-p)))
@@ -3509,11 +3509,11 @@ Interactively, mark both types as read up to event at point."
                                                     (list (format "Ement: (ement-room-mark-read) Unexpected API error: %s"
                                                                   plz-error)
                                                           plz-error))))))))
-        (when-let ((room-buffer (alist-get 'buffer (ement-room-local room))))
+        (when-let* ((room-buffer (alist-get 'buffer (ement-room-local room))))
           ;; NOTE: Ideally we would do this before sending the new request, but to make
           ;; the code much simpler, we do it afterward.
           (with-current-buffer room-buffer
-            (when-let ((request-process (car (map-values ement-room-read-receipt-request))))
+            (when-let* ((request-process (car (map-values ement-room-read-receipt-request))))
               (when (process-live-p request-process)
                 (interrupt-process request-process)))
             (setf ement-room-read-receipt-request nil
@@ -3536,9 +3536,9 @@ Interactively, mark both types as read up to event at point."
 
 (cl-defun ement-room-move-read-markers
     (room &key
-          (read-event (when-let ((event (alist-get "m.read" (ement-room-account-data room) nil nil #'equal)))
+          (read-event (when-let* ((event (alist-get "m.read" (ement-room-account-data room) nil nil #'equal)))
                         (map-nested-elt event '(content event_id))))
-          (fully-read-event (when-let ((event (alist-get "m.fully_read" (ement-room-account-data room) nil nil #'equal)))
+          (fully-read-event (when-let* ((event (alist-get "m.fully_read" (ement-room-account-data room) nil nil #'equal)))
                               (map-nested-elt event '(content event_id)))))
   "Move read markers in ROOM to READ-EVENT and FULLY-READ-EVENT.
 Each event may be an `ement-event' struct or an event ID.  This
@@ -3565,7 +3565,7 @@ updates the markers in ROOM's buffer, not on the server; see
                                   ;; If the event hasn't been inserted into the buffer yet,
                                   ;; this might be nil.  That shouldn't happen, but...
                                   (ewoc-enter-after ement-ewoc event-node symbol)))))))
-    (when-let ((buffer (alist-get 'buffer (ement-room-local room))))
+    (when-let* ((buffer (alist-get 'buffer (ement-room-local room))))
       ;; MAYBE: Error if no buffer?  Or does it matter?
       (with-current-buffer buffer
         (when read-event
@@ -3596,7 +3596,7 @@ buries the buffer and shows the next unread room, if any."
             :fully-read-event (ewoc-data (ement-room--ewoc-last-matching ement-ewoc
                                            (lambda (data) (ement-event-p data))))))
         (set-buffer-modified-p nil)
-        (if-let ((rooms-window (cl-find-if (lambda (window)
+        (if-let* ((rooms-window (cl-find-if (lambda (window)
                                              (member (buffer-name (window-buffer window))
                                                      '("*Ement Taxy*" "*Ement Rooms*")))
                                            (window-list))))
@@ -3701,7 +3701,7 @@ the first and last nodes in the buffer, respectively."
              (diff-seconds (- b-ts a-ts))
              (ement-room-timestamp-header-format ement-room-timestamp-header-format))
         (when (and (>= diff-seconds ement-room-timestamp-header-delta)
-                   (not (when-let ((node-after-a (ewoc-next ewoc node-a)))
+                   (not (when-let* ((node-after-a (ewoc-next ewoc node-a)))
                           (pcase (ewoc-data node-after-a)
                             (`(ts . ,_) t)
                             ((or 'ement-room-read-receipt-marker 'ement-room-fully-read-marker) t)))))
@@ -3842,7 +3842,7 @@ Search starts from node START and moves by NEXT."
       (setf new-node (if (not event-node-before)
                          (progn
                            (ement-debug "No event before it: add first.")
-                           (if-let ((first-node (ewoc-nth ewoc 0)))
+                           (if-let* ((first-node (ewoc-nth ewoc 0)))
                                (progn
                                  (ement-debug "EWOC not empty.")
                                  (if (and (ement-user-p (ewoc-data first-node))
@@ -3857,7 +3857,7 @@ Search starts from node START and moves by NEXT."
                              (ement-debug "EWOC empty: add first.")
                              (ewoc-enter-first ewoc event)))
                        (ement-debug "Found event before new event: insert after it.")
-                       (when-let ((next-node (ewoc-next ewoc event-node-before)))
+                       (when-let* ((next-node (ewoc-next ewoc event-node-before)))
                          (when (and (ement-user-p (ewoc-data next-node))
                                     (equal (ement-event-sender event)
                                            (ewoc-data next-node)))
@@ -4094,7 +4094,7 @@ Formats according to `ement-room-message-format-spec', which see."
                   collect (ement--user-displayname-in room sender)
                   into names
                   finally return (string-join names ", "))))
-    (if-let ((reactions (map-elt (ement-event-local event) 'reactions)))
+    (if-let* ((reactions (map-elt (ement-event-local event) 'reactions)))
         (cl-loop with keys-senders
                  for reaction in reactions
                  for key = (map-nested-elt (ement-event-content reaction) '(m.relates_to key))
@@ -4155,7 +4155,7 @@ Format defaults to `ement-room-message-format-spec', which see."
           (error "ement-room--format-message: Invalid format string: %S" format))))
       ;; Propertize margin text.
       (when ement-room--format-message-wrap-prefix
-        (when-let ((wrap-prefix-end (next-single-property-change (point-min) 'wrap-prefix-end)))
+        (when-let* ((wrap-prefix-end (next-single-property-change (point-min) 'wrap-prefix-end)))
           (goto-char wrap-prefix-end)
           (delete-char 1)
           (let* ((prefix-width (string-width (buffer-substring-no-properties
@@ -4166,7 +4166,7 @@ Format defaults to `ement-room-message-format-spec', which see."
             (put-text-property (point-min) (point-max) 'wrap-prefix prefix)
             (put-text-property (point) (point-max) 'line-prefix prefix))))
       (when ement-room--format-message-margin-p
-        (when-let ((left-margin-end (next-single-property-change (point-min) 'left-margin-end)))
+        (when-let* ((left-margin-end (next-single-property-change (point-min) 'left-margin-end)))
           (goto-char left-margin-end)
           (delete-char 1)
           (let ((left-margin-text-width (string-width (buffer-substring-no-properties (point-min) (point)))))
@@ -4186,7 +4186,7 @@ Format defaults to `ement-room-message-format-spec', which see."
               ;; is: this was only possible by carefully reading the Elisp manual.)
               (insert (propertize " " 'display `((margin left-margin)
                                                  (space :width (- left-margin ,left-margin-text-width))))))))
-        (when-let ((right-margin-start (next-single-property-change (point-min) 'right-margin-start)))
+        (when-let* ((right-margin-start (next-single-property-change (point-min) 'right-margin-start)))
           (goto-char right-margin-start)
           (delete-char 1)
           (let ((string (buffer-substring (point) (point-max))))
@@ -4401,7 +4401,7 @@ HTML is rendered to Emacs text using `shr-insert-document'."
     ;; HACK: So we use the username slot, which was created just for this, for now.
     (when body
       (cl-macrolet ((matches-body-p
-                      (form) `(when-let ((string ,form))
+                      (form) `(when-let* ((string ,form))
                                 (string-match-p (regexp-quote string) body))))
         (or (matches-body-p (ement-user-username user))
             (matches-body-p (ement--user-displayname-in room user))
@@ -4683,7 +4683,7 @@ With prefix arg NO-HISTORY, do not add to `ement-room-message-history'."
       (add-to-history 'ement-room-message-history body))
     (ement-room-compose-buffer-quit-restore-window)
     ;; Make sure we end up with the associated room buffer selected.
-    (when-let ((win (catch 'room-win
+    (when-let* ((win (catch 'room-win
                       (walk-windows
                        (lambda (win)
                          (with-selected-window win
@@ -4853,11 +4853,11 @@ Called via `post-command-hook' if option
               (let* ((window-resize-pixelwise t)
                      (pixheight (* lineheight reqlines))
                      (pixels (- pixheight (window-body-height nil t))))
-                (when-let ((pixels (window-resizable nil pixels nil t t)))
+                (when-let* ((pixels (window-resizable nil pixels nil t t)))
                   (window-resize nil pixels nil t t)))
             ;; In terminal frames we deal in lines rather than pixels.
             (let ((delta (- reqlines (window-body-height))))
-              (when-let ((delta (window-resizable nil delta nil t)))
+              (when-let* ((delta (window-resizable nil delta nil t)))
                 (window-resize nil delta nil t))))
           ;; Ask Emacs to "preserve" the new height.  So long as the window
           ;; maintains this height and is displaying this specific buffer, Emacs
@@ -5297,7 +5297,7 @@ See `ement-room-compose-history-isearch-push-state'."
   "Return string for STRUCT in ROOM.
 STRUCT should be an `ement-room-membership-events' struct."
   (cl-labels ((event-user (event)
-                (propertize (if-let (user (gethash (ement-event-state-key event) ement-users))
+                (propertize (if-let* ((user (gethash (ement-event-state-key event) ement-users)))
                                 (ement--user-displayname-in room user)
                               (ement-event-state-key event))
                             'help-echo (concat (ement-room--format-member-event event room)
@@ -5686,9 +5686,9 @@ Then invalidate EVENT's node to show the image."
     (setf (map-elt (ement-event-local event) 'image) data)
     (when (buffer-live-p buffer)
       (with-current-buffer buffer
-        (if-let (node (ement-room--ewoc-last-matching ement-ewoc
+        (if-let* ((node (ement-room--ewoc-last-matching ement-ewoc
                         (lambda (node-data)
-                          (eq node-data event))))
+                          (eq node-data event)))))
             (ewoc-invalidate ement-ewoc node)
           ;; This shouldn't happen, but very rarely, it can.  I haven't figured out why
           ;; yet, so checking whether a node is found rather than blindly calling
@@ -6074,7 +6074,7 @@ For use in `completion-at-point-functions'."
               ("R s" "Toggle spaces" ement-room-toggle-space
                :description (lambda ()
                               (format "Toggle spaces (%s)"
-                                      (if-let ((spaces (ement--room-spaces ement-room ement-session)))
+                                      (if-let* ((spaces (ement--room-spaces ement-room ement-session)))
                                           (string-join
                                            (mapcar (lambda (space)
                                                      (propertize (ement-room-display-name space)

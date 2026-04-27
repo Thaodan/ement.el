@@ -237,7 +237,7 @@ struct, or a room ID or alias string."
                          (leave-fn (lambda (_session)
                                      (remove-hook 'ement-sync-callback-hook leave-fn-symbol)
                                      ;; FIXME: Probably need to unintern the symbol.
-                                     (when-let ((buffer (map-elt (ement-room-local room) 'buffer)))
+                                     (when-let* ((buffer (map-elt (ement-room-local room) 'buffer)))
                                        (when (buffer-live-p buffer)
                                          (kill-buffer buffer))))))
                     (setf (symbol-function leave-fn-symbol) leave-fn)
@@ -607,7 +607,7 @@ Returns one of nil (meaning default rules are used), `all-loud',
                                 (ement-session-account-data session))))
     (cl-labels ((override-mute-rule-for-room-p (room)
                   ;; Following findOverrideMuteRule() in RoomNotifs.ts.
-                  (when-let ((overrides (map-nested-elt push-rules '(content global override))))
+                  (when-let* ((overrides (map-nested-elt push-rules '(content global override))))
                     (cl-loop for rule in overrides
                              when (and (alist-get 'enabled rule)
                                        (rule-for-room-p rule room))
@@ -621,20 +621,20 @@ Returns one of nil (meaning default rules are used), `all-loud',
                               (equal "room_id" key)
                               (equal (ement-room-id room) pattern)))))
                 (mute-rule-p (rule)
-                  (when-let ((actions (alist-get 'actions rule)))
+                  (when-let* ((actions (alist-get 'actions rule)))
                     (seq-contains-p actions "dont_notify")))
                 ;; NOTE: Although v1.7 of the spec says that "dont_notify" is
                 ;; obsolete, the latest revision of matrix-react-sdk (released last week
                 ;; as v3.77.1) still works as modeled here.
                 (tweak-rule-p (type rule)
-                  (when-let ((actions (alist-get 'actions rule)))
+                  (when-let* ((actions (alist-get 'actions rule)))
                     (and (seq-contains-p actions "notify")
                          (seq-contains-p actions `(set_tweak . ,type) 'seq-contains-p)))))
       ;; If none of these match, nil is returned, meaning that the default rule is used
       ;; for the room.
       (if (override-mute-rule-for-room-p room)
           'none
-        (when-let ((room-rule (cl-find-if (lambda (rule)
+        (when-let* ((room-rule (cl-find-if (lambda (rule)
                                             (equal (ement-room-id room) (alist-get 'rule_id rule)))
                                           (map-nested-elt push-rules '(content global room)))))
           (cond ((not (alist-get 'enabled room-rule))
@@ -809,7 +809,7 @@ unseen user IDs to be input as well."
 		     using (hash-values value)
 		     collect (cons (format-user value) key)))
            (user-at-point (when (equal major-mode 'ement-room-mode)
-                            (when-let ((node (ewoc-locate ement-ewoc)))
+                            (when-let* ((node (ewoc-locate ement-ewoc)))
                               (when (ement-event-p (ewoc-data node))
                                 (format-user (ement-event-sender (ewoc-data node)))))))
 	   (selected-user (completing-read "User: " (mapcar #'car display-to-id)
@@ -885,7 +885,7 @@ USER is an `ement-user' struct."
 ;;        (remq nil
 ;;              (list
 ;;               ;; 1.
-;;               (or (when-let ((user (most-powerful-user-in room)))
+;;               (or (when-let* ((user (most-powerful-user-in room)))
 ;;                     (setf first-server-by-power-level t)
 ;;                     (server-of user))
 ;;                   (car (servers-by-population-in room)))
@@ -1054,7 +1054,7 @@ period, anywhere in the body."
                  (pos 0) (replace-group) (replacement))
       (while (setf pos (string-match regexp body pos))
         (if (setf replacement
-                  (or (when-let (member (gethash (match-string 1 body) members))
+                  (or (when-let* ((member (gethash (match-string 1 body) members)))
                         ;; Found user ID: use it as replacement.
                         (setf replace-group 1)
                         (format template (match-string 1 body)
@@ -1114,7 +1114,7 @@ suggested room."
                (selected-name (completing-read
                                prompt names nil t
                                (when suggest
-                                 (when-let ((suggestion (ement--room-at-point)))
+                                 (when-let* ((suggestion (ement--room-at-point)))
                                    (when (or (not predicate)
                                              (funcall predicate suggestion))
                                      (ement--format-room suggestion 'topic)))))))
@@ -1231,7 +1231,7 @@ DATA is an unsent message event's data alist."
                 (and (equal "m.room.member" (ement-event-type event))
                      (equal (ement-user-id user) (ement-event-state-key event))))
               (latest-membership-for (user room)
-                (when-let ((latest-membership-event
+                (when-let* ((latest-membership-event
                             (car
                              (cl-sort
                               ;; I guess we need to check both state and timeline events.
@@ -1496,7 +1496,7 @@ Works in major-modes `ement-room-mode',
                                        (not (string-empty-p (alist-get content-field (ement-event-content event)))))
                              return (alist-get content-field (ement-event-content event)))))
               (member-events-name ()
-                (when-let ((member-events (cl-loop for accessor in '(ement-room-timeline ement-room-state ement-room-invite-state)
+                (when-let* ((member-events (cl-loop for accessor in '(ement-room-timeline ement-room-state ement-room-invite-state)
                                                    append (cl-remove-if-not (apply-partially #'equal "m.room.member")
                                                                             (funcall accessor room)
                                                                             :key #'ement-event-type))))
@@ -1525,14 +1525,14 @@ Works in major-modes `ement-room-mode',
               (hero-names (heroes)
                 (string-join (mapcar #'hero-name heroes) ", "))
               (hero-name (id)
-                (if-let ((user (gethash id ement-users)))
+                (if-let* ((user (gethash id ement-users)))
                     (ement--user-displayname-in room user)
                   id))
               (heroes-and-others (heroes joined)
                 (format "%s, and %s others" (hero-names heroes)
                         (- joined (length heroes))))
               (name-override ()
-                (when-let ((event (alist-get "org.matrix.msc3015.m.room.name.override"
+                (when-let* ((event (alist-get "org.matrix.msc3015.m.room.name.override"
                                              (ement-room-account-data room)
                                              nil nil #'equal)))
                   (map-nested-elt event '(content name))))

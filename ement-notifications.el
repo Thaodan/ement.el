@@ -126,7 +126,7 @@ to `ement-api', which see."
                                              :pred #'ement-session-has-synced-p)
                      :only (when current-prefix-arg
                              "highlight")))
-  (if-let ((buffer (get-buffer "*Ement Notifications*")))
+  (if-let* ((buffer (get-buffer "*Ement Notifications*")))
       (switch-to-buffer buffer)
     (let ((endpoint "notifications")
           (params (remq nil
@@ -203,7 +203,7 @@ to `ement-api', which see."
   (with-demoted-errors "ement-notifications-log-to-buffer: %S"
     (with-current-buffer (ement-notifications--log-buffer :name buffer-name)
       (save-window-excursion
-        (when-let ((buffer-window (get-buffer-window (current-buffer))))
+        (when-let* ((buffer-window (get-buffer-window (current-buffer))))
           ;; Select the buffer's window to avoid EWOC bug.  (See #191.)
           (select-window buffer-window))
         ;; TODO: Use the :readp slot to mark unread events.
@@ -229,7 +229,7 @@ to `ement-api', which see."
                                               action ement-notify-button-action))
             ;; Apply the session, room, and event properties to the whole event.
             (setf end (save-excursion
-                        (if-let ((next-node (ewoc-next ement-ewoc new-node)))
+                        (if-let* ((next-node (ewoc-next ement-ewoc new-node)))
                             (ewoc-location next-node)
                           (point-max))))
             (add-text-properties start end

@@ -90,7 +90,7 @@
               ((map session) ement-directory-etc))
     (pcase type
       ("m.space" nil)
-      (_ (when-let ((room (cl-find id (ement-session-rooms session)
+      (_ (when-let* ((room (cl-find id (ement-session-rooms session)
                                    :key #'ement-room-id :test #'equal))
                     ((ement--room-direct-p room session)))
            (ement-propertize "People"

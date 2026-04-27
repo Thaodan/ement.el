@@ -266,7 +266,7 @@ from recent to non-recent for rooms updated in the past hour."
                                          (ement-room-display-name parent-room)
                                        id)))
                     (concat ement-room-list-space-prefix space-name))))
-      (when-let ((key (if id
+      (when-let* ((key (if id
                           ;; ID specified.
                           (cond ((or (member id parents)
                                      (equal id (ement-room-id room)))
@@ -732,7 +732,7 @@ DISPLAY-BUFFER-ACTION is nil, the buffer is not displayed."
                   column-sizes (cdr format-cons)
                   header-line-format (taxy-magit-section-format-header
                                       column-sizes ement-room-list-column-formatters))
-            (when-let ((window (get-buffer-window (current-buffer))))
+            (when-let* ((window (get-buffer-window (current-buffer))))
               (setf window-point (window-point window)
                     window-start (window-start window)))
             (when ement-room-list-visibility-cache
@@ -750,9 +750,9 @@ DISPLAY-BUFFER-ACTION is nil, the buffer is not displayed."
                 (goto-char (oref section start))
               (goto-char pos))))
         (when display-buffer-action
-          (when-let ((window (display-buffer buffer-name display-buffer-action)))
+          (when-let* ((window (display-buffer buffer-name display-buffer-action)))
             (select-window window)))
-        (when-let ((window (get-buffer-window buffer-name)))
+        (when-let* ((window (get-buffer-window buffer-name)))
           (set-window-start window window-start)
           (set-window-point window window-point))
         ;; FIXME: Despite all this code to save and restore point and window point and
