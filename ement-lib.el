@@ -997,11 +997,13 @@ avatars, etc."
                                                    "white" "black")))))))
       (apply #'color-rgb-to-hex (append color-rgb (list 2))))))
 
-(cl-defun ement--format-user (user &optional (room ement-room) (session ement-session))
+(cl-defun ement--format-user (user &optional (room ement-room) (session ement-session) per-message-displayname)
   "Format `ement-user' USER for ROOM on SESSION.
-ROOM defaults to the value of `ement-room'."
-  (let ((face (cond ((equal (ement-user-id (ement-session-user session))
-                            (ement-user-id user))
+ROOM defaults to the value of `ement-room'.
+Optionally use PER-MESSAGE-DISPLAYNAME instead of the users global displayname."
+  (let ((face (cond ((and session
+                      (equal (ement-user-id (ement-session-user session))
+                            (ement-user-id user)))
                      'ement-room-self)
                     (ement-room-prism
                      `(:inherit ement-room-user :foreground ,(or (ement-user-color user)
@@ -1011,7 +1013,8 @@ ROOM defaults to the value of `ement-room'."
     ;; FIXME: If a membership state event has not yet been received, this
     ;; sets the display name in the room to the user ID, and that prevents
     ;; the display name from being used if the state event arrives later.
-    (propertize (ement--user-displayname-in room user)
+    (propertize (or per-message-displayname
+                    (ement--user-displayname-in room user))
                 'face face
                 'help-echo (ement-user-id user))))
 
