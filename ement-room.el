@@ -1357,8 +1357,9 @@ spec) without requiring all events to use the same margin width."
 (ement-room-define-event-formatter ?S
   "Sender display name."
   (ignore session)
-  (pcase-let ((sender (ement--format-user (ement-event-sender event) room))
-              ((cl-struct ement-room (local (map buffer))) room))
+  (pcase-let* ((per-message-displayname (ement-room--per-message-profile-displayname event))
+               (sender (ement--format-user (ement-event-sender event) room nil per-message-displayname))
+               ((cl-struct ement-room (local (map buffer))) room))
     ;; NOTE: When called from an `ement-notify' function, ROOM may have no buffer.  In
     ;; that case, just use the current buffer (which should be a temp buffer used to
     ;; format the event).
@@ -2230,10 +2231,14 @@ mentioning the ROOM and CONTENT."
                ;; `user' (from ement-session).
                ((cl-struct ement-session user) ement-session)
                ;; `sender', `body' (from event).
+               (per-message-displayname
+                (ement-room--per-message-profile-displayname event))
                ((cl-struct ement-event sender (content (map body))) event))
     (unless (equal (ement-user-id sender) (ement-user-id user))
       (user-error "You may only edit your own messages"))
     ;; Remove any leading asterisk from the plain-text body.
+    (when per-message-displayname
+       (setf body (replace-regexp-in-string (rx bos (literal per-message-displayname) ":" (1+ space)) "" body t t)))
     (setf body (replace-regexp-in-string (rx bos "*" (1+ space)) "" body t t))
     (list event body)))
 
@@ -4141,6 +4146,21 @@ Format defaults to `ement-room-message-format-spec', which see."
                          'display `((margin right-margin) ,string))))))
       (buffer-string))))
 
+;; https://github.com/beeper/matrix-spec-proposals/blob/b24060e2a66dc3e9b459f634ba91d3a34d702efa/proposals/4144-per-message-profile.md
+(defun ement-room--per-message-profile-p (event)
+  "Test if EVENT contains a per-messsage-profile, if so return it."
+  ;; NOTE: The per message profile is essentially a ement-user but with additional
+  ;;       has_fallback flag. Not sure if it actually should be it's own type.
+  (or (alist-get 'm.per_message_profile (ement-event-content event) )
+      (alist-get 'com.beeper.per_message_profile (ement-event-content event) )))
+
+(defun ement-room--per-message-profile-displayname (event)
+  "Return displayname of the EVENT if it contains a per-message profile fallback."
+  (when-let* ((profile (ement-room--per-message-profile-p event)))
+    (and (alist-get 'has_fallback profile)
+         (alist-get 'displayname profile))))
+(defalias 'ement-room--per-message-profile-fallback-p 'ement-room--per-message-profile-displayname)
+
 (cl-defun ement-room--format-message-body (event session &key (formatted-p t))
   "Return formatted body of \"m.room.message\" EVENT on SESSION.
 If FORMATTED-P, return the formatted body content, when available."
@@ -4155,13 +4175,16 @@ If FORMATTED-P, return the formatted body content, when available."
                 content)
                (body (or new-body main-body))
                (formatted-body (or new-formatted-body formatted-body))
+               (fallback-username (ement-room--per-message-profile-fallback-p event))
                (body (if (or (not formatted-p) (not formatted-body))
                          ;; Copy the string so as not to add face properties to the one in the struct.
-                         (copy-sequence body)
+                         (if fallback-username
+                             (string-trim-left body (concat fallback-username ": "))
+                         (copy-sequence body))
                        (pcase (or new-content-format content-format)
                          ("org.matrix.custom.html"
                           (save-match-data
-                            (ement-room--render-html formatted-body)))
+                            (ement-room--render-html formatted-body fallback-username)))
                          (_ (format "[unknown body format: %s] %s"
                                     (or new-content-format content-format) body)))))
                (appendix (pcase msgtype
@@ -4203,8 +4226,9 @@ If FORMATTED-P, return the formatted body content, when available."
       (setf body "[redacted]"))
     body))
 
-(defun ement-room--render-html (string)
+(defun ement-room--render-html (string &optional has-fallback)
   "Return rendered version of HTML STRING.
+Remove per-message-profile fallback if HAS-FALLBACK is non-nil.
 HTML is rendered to Emacs text using `shr-insert-document'."
   (with-current-buffer
       (or (get-buffer " *ement-room--render-html*")
@@ -4223,6 +4247,8 @@ HTML is rendered to Emacs text using `shr-insert-document'."
       ;; resized (i.e. the wrapping is adjusted automatically by redisplay
       ;; rather than requiring the message to be re-rendered to HTML).
       (let ((shr-use-fonts ement-room-use-variable-pitch)
+            (dom (libxml-parse-html-region (point-min) (point-max)))
+
             (old-fn (symbol-function 'shr-tag-blockquote))) ;; Bind to a var to avoid unknown-function linting errors.
         (cl-letf (((symbol-function 'shr-fill-line) #'ignore)
                   ((symbol-function 'shr-tag-blockquote)
@@ -4234,8 +4260,9 @@ HTML is rendered to Emacs text using `shr-insert-document'."
                                                line-prefix "    "))
                        ;; NOTE: We use our own gv, `ement-text-property'; very convenient.
                        (add-face-text-property beg (point-max) 'ement-room-quote 'append)))))
-          (shr-insert-document
-           (libxml-parse-html-region (point-min) (point-max))))))
+          (when-let* ((data-mx-profile-fallback-tag (and has-fallback (dom-child-by-tag (dom-child-by-tag dom 'body) 'strong))))
+            (dom-remove-node dom data-mx-profile-fallback-tag))
+          (shr-insert-document dom))))
     (string-trim (buffer-substring (point) (point-max)))))
 
 (cl-defun ement-room--event-mentions-user-p (event user &optional (room ement-room))
