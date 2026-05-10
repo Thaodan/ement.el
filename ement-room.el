@@ -4274,8 +4274,13 @@ If FORMATTED-P, return the formatted body content, when available."
                    ;; FIXME: This should check if the quote is the plain text body but
                    ;; that is not easy...
                    (if (and event-replied-to (not quote-in-body-p))
-                       (concat (ement-room--format-quotation-text event-replied-to)
-                               "\n" body)
+                       (if (not formatted-p)
+                           (concat (ement-room--format-quotation-text event-replied-to)
+                                   "\n" body)
+                         (save-match-data
+                           (ement-room--render-html
+                            (ement-room--format-quotation-html event-replied-to body
+                                                               ement-room) body)))
                      ;; Copy the string so as not to add face properties to the one in the struct.
                      (copy-sequence body))
                  (pcase (or new-content-format content-format)
