@@ -2287,6 +2287,10 @@ mentioning the ROOM and CONTENT."
       (user-error "You may only edit your own messages"))
     (when per-message-displayname
        (setf body (replace-regexp-in-string (rx bos (literal per-message-displayname) ":" (1+ space)) "" body t t)))
+    ;; Remove any eventual fallback quote in the plain-text body
+    (setf body (replace-regexp-in-string
+                (rx (seq (+ (seq bol ">" space (* nonl) (or (not (any)) eol))) "\n"))
+                "" body t t))
     ;; Remove any leading asterisk from the plain-text body.
     (setf body (replace-regexp-in-string (rx bos "*" (1+ space)) "" body t t))
     (list event body)))
