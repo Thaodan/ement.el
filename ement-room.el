@@ -2059,18 +2059,18 @@ are sync batch tokens.  Used for, e.g. filling gaps in
                                                      (or (ement-room-canonical-alias room)
                                                          (ement-room-id room))))
 			  ;; FIXME: Remove this message after further testing.
-                          (message "Ement: Continuing to fill gap in %S (%S) (remaining limit: %s)"
-                                   (ement-room-display-name room)
-                                   (or (ement-room-canonical-alias room)
-                                       (ement-room-id room))
-                                   remaining-limit)
+                          ;; (message "Ement: Continuing to fill gap in %S (%S) (remaining limit: %s)"
+                          ;;          (ement-room-display-name room)
+                          ;;          (or (ement-room-canonical-alias room)
+                          ;;              (ement-room-id room))
+                          ;;          remaining-limit)
                           (ement-room-retro-to-token
                            room session end to :limit remaining-limit))))))))
     ;; FIXME: Remove this message after further testing.
-    (message "Ement: Filling gap in %S (%S)"
-	     (ement-room-display-name room)
-             (or (ement-room-canonical-alias room)
-                 (ement-room-id room)))
+    ;; (message "Ement: Filling gap in %S (%S)"
+	;;      (ement-room-display-name room)
+    ;;          (or (ement-room-canonical-alias room)
+    ;;              (ement-room-id room)))
     (ement-api session endpoint :timeout 30
       :params (list (list "from" from)
                     (list "to" to)
@@ -2648,7 +2648,9 @@ before the earliest-seen message)."
               ;; This feels a little hacky, but maybe not too bad.
               (setf (ement-room-prev-batch room) end))
             (setf ement-room-retro-loading nil)))))
-    (message "Ement: Loaded %s earlier events." num-events)))
+    ;; (message "Ement: Loaded %s earlier events." num-events)
+    )
+  )
 
 (defun ement-room--insert-events (events &optional retro)
   "Insert EVENTS into current buffer.
